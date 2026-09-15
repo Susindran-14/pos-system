@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useMemo } from 'react';
+import React, { createContext, useContext, useState, useMemo, useEffect, useRef } from 'react';
+import { productsApi, scannerApi } from '../api/client';
 
 const CartContext = createContext();
 
@@ -8,9 +9,21 @@ export function CartProvider({ children }) {
   const [billDiscount, setBillDiscount] = useState(0);
   const [discountType, setDiscountType] = useState('flat'); // 'flat' or 'percent'
   const [heldBills, setHeldBills] = useState([]);
+  const [scannerSessionId, setScannerSessionId] = useState(() => {
+    return localStorage.getItem('pos_scanner_session') || `SES-${Math.floor(1000 + Math.random() * 9000)}`;
+  });
+  const [lastScannedItem, setLastScannedItem] = useState(null);
+
+  // Save session ID in localStorage
+  useEffect(() => {
+    if (scannerSessionId) {
+      localStorage.setItem('pos_scanner_session', scannerSessionId);
+    }
+  }, [scannerSessionId]);
 
   // Add product to cart (or increment qty if already present)
   const addToCart = (product) => {
+    setLastScannedItem(product);
     setCart((prev) => {
       const existing = prev.find((item) => item.sku === product.sku);
       if (existing) {
@@ -35,6 +48,48 @@ export function CartProvider({ children }) {
         },
       ];
     });
+  };
+
+  // Add by barcode or SKU directly (looks up product in database or cache)
+  const addBarcodeToCart = async (barcode) => {
+    const raw = String(barcode).trim();
+    if (!raw) return null;
+
+    try {
+      const prod = await productsApi.getByBarcode(raw);
+      if (prod) {
+        addToCart(prod);
+        return prod;
+      }
+    } catch (e) {
+      // Fallback search in catalog
+      try {
+        const allProds = await productsApi.getAll();
+        const matched = (allProds || []).find(
+          (p) =>
+            p.barcode === raw ||
+            p.sku.toLowerCase() === raw.toLowerCase()
+        );
+        if (matched) {
+          addToCart(matched);
+          return matched;
+        }
+      } catch (err) {}
+    }
+
+    // If unregistered barcode, still add as a flexible line item so billing is never blocked
+    const fallbackItem = {
+      id: null,
+      sku: raw,
+      name: `Garment Item (${raw})`,
+      size: '',
+      color: '',
+      selling_price: 0,
+      mrp: 0,
+      gst_rate: 5,
+    };
+    addToCart(fallbackItem);
+    return fallbackItem;
   };
 
   const updateQty = (sku, newQty) => {
@@ -159,6 +214,38 @@ export function CartProvider({ children }) {
     };
   }, [cart, billDiscount, discountType]);
 
+  // Sync Cart status with backend so smartphone gun reflects updated totals
+  useEffect(() => {
+    if (!scannerSessionId) return;
+    scannerApi.syncCart({
+      session_id: scannerSessionId,
+      total_items: totals.totalQty || 0,
+      grand_total: totals.grandTotal || 0,
+      last_item_name: lastScannedItem?.name || 'POS Bill Active',
+      last_item_price: lastScannedItem?.rate || lastScannedItem?.selling_price || 0,
+    }).catch(() => {});
+  }, [scannerSessionId, totals, lastScannedItem]);
+
+  // Background polling for scans from smartphone gun
+  useEffect(() => {
+    if (!scannerSessionId) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await scannerApi.pollScans(scannerSessionId);
+        if (res?.has_scans && Array.isArray(res.scans) && res.scans.length > 0) {
+          for (const scan of res.scans) {
+            if (scan?.product) {
+              addToCart(scan.product);
+            } else if (scan?.barcode) {
+              await addBarcodeToCart(scan.barcode);
+            }
+          }
+        }
+      } catch (e) {}
+    }, 800);
+    return () => clearInterval(interval);
+  }, [scannerSessionId]);
+
   return (
     <CartContext.Provider
       value={{
@@ -171,6 +258,10 @@ export function CartProvider({ children }) {
         setDiscountType,
         heldBills,
         addToCart,
+        addBarcodeToCart,
+        scannerSessionId,
+        setScannerSessionId,
+        lastScannedItem,
         updateQty,
         updateItemDiscount,
         removeItem,

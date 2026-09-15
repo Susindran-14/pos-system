@@ -80,7 +80,7 @@ export default function MobileScannerGun({ sessionId }) {
     return () => clearInterval(interval);
   }, [session]);
 
-  // Start Camera Scanner
+  // Start Camera Scanner with robust camera selection
   const startCamera = async () => {
     try {
       setCameraError(null);
@@ -97,8 +97,23 @@ export default function MobileScannerGun({ sessionId }) {
       const qrCodeScanner = new Html5Qrcode('mobile-scanner-viewfinder');
       html5QrCodeRef.current = qrCodeScanner;
 
+      // First check available cameras to avoid overconstrained errors on mobile
+      let cameraConfig = { facingMode: 'environment' };
+      try {
+        const cameras = await Html5Qrcode.getCameras();
+        if (cameras && cameras.length > 0) {
+          const rearCam = cameras.find(
+            (c) =>
+              c.label.toLowerCase().includes('back') ||
+              c.label.toLowerCase().includes('rear') ||
+              c.label.toLowerCase().includes('environment')
+          ) || cameras[cameras.length - 1];
+          cameraConfig = rearCam.id;
+        }
+      } catch (e) {}
+
       await qrCodeScanner.start(
-        { facingMode: 'environment' },
+        cameraConfig,
         {
           fps: 15,
           qrbox: { width: 280, height: 160 },
@@ -111,9 +126,16 @@ export default function MobileScannerGun({ sessionId }) {
       );
     } catch (err) {
       console.error('Camera start error:', err);
-      setCameraError(
-        'Unable to access mobile camera. Please ensure camera permissions are allowed in your browser settings.'
-      );
+      const isHttp = window.location.protocol !== 'https:' && window.location.hostname !== 'localhost';
+      if (isHttp) {
+        setCameraError(
+          'Mobile browsers require HTTPS to open the camera. When testing locally over Wi-Fi, enable "Insecure origins treated as secure" in Chrome flags or deploy to Vercel/HTTPS.'
+        );
+      } else {
+        setCameraError(
+          'Camera access blocked or denied. Please click the Lock icon in your browser address bar and set Camera to "Allow".'
+        );
+      }
       setIsScanning(false);
     }
   };

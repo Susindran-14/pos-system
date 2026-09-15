@@ -20,11 +20,10 @@ import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 
 export default function ScannerModal({ isOpen, onClose, onScanResult }) {
-  const { totals } = useCart();
+  const { totals, scannerSessionId } = useCart();
   const { showToast } = useToast();
 
   const [activeTab, setActiveTab] = useState('camera'); // 'camera' or 'remote'
-  const [sessionId, setSessionId] = useState(() => `SES-${Math.floor(1000 + Math.random() * 9000)}`);
   const [pairUrl, setPairUrl] = useState('');
   const [pairedScansCount, setPairedScansCount] = useState(0);
 
@@ -37,46 +36,14 @@ export default function ScannerModal({ isOpen, onClose, onScanResult }) {
   const html5QrCodeRef = useRef(null);
   const scanCooldownRef = useRef(false);
 
-  // Initialize Pair URL
+  // Initialize Pair URL with persistent CartContext session ID
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !scannerSessionId) return;
     const origin = window.location.origin;
-    setPairUrl(`${origin}/?scanner=true&session=${sessionId}`);
-  }, [isOpen, sessionId]);
+    setPairUrl(`${origin}/?scanner=true&session=${scannerSessionId}`);
+  }, [isOpen, scannerSessionId]);
 
-  // Sync Cart status with backend session so mobile phone displays live counter
-  useEffect(() => {
-    if (!isOpen || !sessionId) return;
-    scannerApi.syncCart({
-      session_id: sessionId,
-      total_items: totals.totalQty || 0,
-      grand_total: totals.grandTotal || 0,
-      last_item_name: lastScannedItem?.name || 'POS Register Ready',
-      last_item_price: lastScannedItem?.selling_price || 0,
-    }).catch(() => {});
-  }, [isOpen, sessionId, totals, lastScannedItem]);
-
-  // Live Polling for Scans sent from the Smartphone
-  useEffect(() => {
-    if (!isOpen || !sessionId) return;
-
-    const pollInterval = setInterval(async () => {
-      try {
-        const res = await scannerApi.pollScans(sessionId);
-        if (res?.has_scans && Array.isArray(res.scans)) {
-          for (const scan of res.scans) {
-            setPairedScansCount((prev) => prev + 1);
-            showToast(`📲 Phone Scanned: ${scan.product?.name || scan.barcode}`);
-            onScanResult(scan.barcode);
-          }
-        }
-      } catch (e) {}
-    }, 800);
-
-    return () => clearInterval(pollInterval);
-  }, [isOpen, sessionId, onScanResult, showToast]);
-
-  // Live Camera Handler
+  // Live Camera Handler with robust camera selection
   const startCamera = async () => {
     try {
       setCameraError(null);
@@ -92,10 +59,24 @@ export default function ScannerModal({ isOpen, onClose, onScanResult }) {
       const qrCode = new Html5Qrcode('desktop-camera-reader');
       html5QrCodeRef.current = qrCode;
 
+      let cameraConfig = { facingMode: 'environment' };
+      try {
+        const cameras = await Html5Qrcode.getCameras();
+        if (cameras && cameras.length > 0) {
+          const rearCam = cameras.find(
+            (c) =>
+              c.label.toLowerCase().includes('back') ||
+              c.label.toLowerCase().includes('rear') ||
+              c.label.toLowerCase().includes('environment')
+          ) || cameras[0];
+          cameraConfig = rearCam.id;
+        }
+      } catch (e) {}
+
       await qrCode.start(
-        { facingMode: 'environment' },
+        cameraConfig,
         {
-          fps: 12,
+          fps: 15,
           qrbox: { width: 260, height: 160 },
           aspectRatio: 1.33,
         },
@@ -128,7 +109,12 @@ export default function ScannerModal({ isOpen, onClose, onScanResult }) {
       );
     } catch (err) {
       console.error('Desktop camera error:', err);
-      setCameraError('Camera access denied or unavailable. Please allow camera permissions in your browser.');
+      const isHttp = window.location.protocol !== 'https:' && window.location.hostname !== 'localhost';
+      if (isHttp) {
+        setCameraError('Camera access requires HTTPS or localhost. Please deploy to Vercel or open over localhost.');
+      } else {
+        setCameraError('Camera access blocked. Please click the Lock / Tune icon in your address bar and set Camera to "Allow".');
+      }
       setCameraScanning(false);
     }
   };
@@ -286,7 +272,7 @@ export default function ScannerModal({ isOpen, onClose, onScanResult }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, padding: '8px 12px', background: 'var(--bg-card-subtle)', borderRadius: '8px', border: '1px solid var(--border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '12px' }}>
                   <Smartphone size={15} style={{ color: '#3b82f6' }} />
-                  <span>Session Code: <strong>{sessionId}</strong></span>
+                  <span>Session Code: <strong>{scannerSessionId}</strong></span>
                 </div>
                 <span className="badge success">
                   {pairedScansCount > 0 ? `🟢 Active (${pairedScansCount} scans)` : '⏳ Listening for Scans'}

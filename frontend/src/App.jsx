@@ -31,6 +31,7 @@ function MainApp() {
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const { isLocked } = useAuth();
+  const { addBarcodeToCart, scannerSessionId } = useCart();
 
   const handleNavigate = (view) => {
     setVisitedViews((prev) => {
@@ -43,9 +44,12 @@ function MainApp() {
     setIsMobileNavOpen(false); // Auto close sidebar on mobile navigation
   };
 
-  const handleScanResult = (barcode) => {
+  const handleScanResult = async (barcode) => {
     // When scanner decodes barcode, switch to POS view and add product
     handleNavigate('pos');
+    if (barcode) {
+      await addBarcodeToCart(barcode);
+    }
   };
 
   return (
