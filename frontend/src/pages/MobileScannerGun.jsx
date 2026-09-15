@@ -90,16 +90,33 @@ export default function MobileScannerGun({ sessionId }) {
 
       if (html5QrCodeRef.current) {
         try {
-          await html5QrCodeRef.current.stop();
+          if (html5QrCodeRef.current.isScanning) {
+            await html5QrCodeRef.current.stop();
+          }
         } catch (e) {}
       }
 
+      // Ensure DOM element is present
       const qrCodeScanner = new Html5Qrcode('mobile-scanner-viewfinder');
       html5QrCodeRef.current = qrCodeScanner;
 
-      // First check available cameras to avoid overconstrained errors on mobile
-      let cameraConfig = { facingMode: 'environment' };
+      const qrConfig = {
+        fps: 15,
+        qrbox: { width: 280, height: 160 },
+        aspectRatio: 1.33,
+      };
+
       try {
+        // First try standard back/environment camera
+        await qrCodeScanner.start(
+          { facingMode: 'environment' },
+          qrConfig,
+          onBarcodeDetected,
+          () => {}
+        );
+      } catch (firstErr) {
+        console.warn('Standard environment facingMode failed, checking camera list...', firstErr);
+        // Fallback: Query camera devices and choose rear or available camera
         const cameras = await Html5Qrcode.getCameras();
         if (cameras && cameras.length > 0) {
           const rearCam = cameras.find(
@@ -107,52 +124,48 @@ export default function MobileScannerGun({ sessionId }) {
               c.label.toLowerCase().includes('back') ||
               c.label.toLowerCase().includes('rear') ||
               c.label.toLowerCase().includes('environment')
-          ) || cameras[cameras.length - 1];
-          cameraConfig = rearCam.id;
-        }
-      } catch (e) {}
+          ) || cameras[0];
 
-      await qrCodeScanner.start(
-        cameraConfig,
-        {
-          fps: 15,
-          qrbox: { width: 280, height: 160 },
-          aspectRatio: 1.33,
-        },
-        onBarcodeDetected,
-        (errorMessage) => {
-          // Ignore frame scan errors
+          await qrCodeScanner.start(
+            rearCam.id,
+            qrConfig,
+            onBarcodeDetected,
+            () => {}
+          );
+        } else {
+          throw firstErr;
         }
-      );
+      }
     } catch (err) {
       console.error('Camera start error:', err);
       const isHttp = window.location.protocol !== 'https:' && window.location.hostname !== 'localhost';
       if (isHttp) {
         setCameraError(
-          'Mobile browsers require HTTPS to open the camera. When testing locally over Wi-Fi, enable "Insecure origins treated as secure" in Chrome flags or deploy to Vercel/HTTPS.'
+          'Mobile browsers require HTTPS to open the camera. Please access the site via your HTTPS Vercel URL.'
         );
       } else {
         setCameraError(
           'Camera access blocked or denied. Please click the Lock icon in your browser address bar and set Camera to "Allow".'
         );
       }
-      setIsScanning(false);
     }
   };
 
   const stopCamera = async () => {
     if (html5QrCodeRef.current) {
       try {
-        await html5QrCodeRef.current.stop();
+        if (html5QrCodeRef.current.isScanning) {
+          await html5QrCodeRef.current.stop();
+        }
+        await html5QrCodeRef.current.clear();
       } catch (e) {}
     }
-    setIsScanning(false);
   };
 
   // Handle Barcode Scanned
   const onBarcodeDetected = async (decodedText) => {
     if (scanLockRef.current) return;
-    scanLockRef.current = true;
+    scanLockRef.current = true; // Lock scanning while displaying result
 
     playBeep();
 
@@ -172,14 +185,12 @@ export default function MobileScannerGun({ sessionId }) {
 
       setStatusMsg(`✅ Sent to POS: ${res.product?.name || decodedText}`);
 
-      // If auto-continuous is disabled, pause camera and prompt "Scan Next Item"
-      if (!autoContinuous) {
-        await stopCamera();
-      } else {
-        // In continuous mode, brief 1.2s cooldown before next scan
+      // In Continuous Auto-Scan Mode: automatically unlock after 1.5s
+      if (autoContinuous) {
         setTimeout(() => {
+          setLastScanned(null);
           scanLockRef.current = false;
-        }, 1200);
+        }, 1500);
       }
     } catch (err) {
       setStatusMsg(`Error sending barcode: ${err.message}`);
@@ -208,13 +219,14 @@ export default function MobileScannerGun({ sessionId }) {
     }
   };
 
-  // Trigger "Scan Next Item" button
+  // Trigger "Scan Next Item" button without stopping the camera
   const handleScanNext = () => {
     setLastScanned(null);
-    startCamera();
+    scanLockRef.current = false; // Immediately unlock camera for the next barcode
+    setStatusMsg('Camera Ready. Aim at next barcode.');
   };
 
-  // Start camera on mount
+  // Start camera once on mount
   useEffect(() => {
     startCamera();
     return () => {
@@ -280,9 +292,9 @@ export default function MobileScannerGun({ sessionId }) {
         )}
       </div>
 
-      {/* CAMERA VIEWFINDER OR SCAN NEXT PROMPT */}
+      {/* CAMERA VIEWFINDER & LIVE RESULT BOX */}
       <div className="mobile-gun-viewfinder-box">
-        {cameraError ? (
+        {cameraError && (
           <div className="gun-camera-error">
             <AlertTriangle size={32} style={{ color: '#f87171', marginBottom: 8 }} />
             <p style={{ fontSize: '13px', margin: '0 0 12px 0' }}>{cameraError}</p>
@@ -290,45 +302,52 @@ export default function MobileScannerGun({ sessionId }) {
               <RefreshCw size={15} /> Try Again
             </button>
           </div>
-        ) : isScanning ? (
-          <div className="gun-camera-wrapper">
-            <div id="mobile-scanner-viewfinder" style={{ width: '100%' }}></div>
-            {/* Laser Aiming Line Overlay */}
-            <div className="gun-laser-line" />
-            <div className="gun-scanner-guide-text">
-              Point camera at barcode or garment QR tag
-            </div>
-          </div>
-        ) : (
-          /* "SCAN NEXT ITEM" ACTION CARD */
-          <div className="gun-scanned-success-card">
-            <div className="gun-success-icon-wrap">
-              <CheckCircle2 size={36} style={{ color: '#10b981' }} />
-            </div>
-            <h3 style={{ fontSize: '17px', fontWeight: 800, margin: '8px 0 4px' }}>
-              Item Transmitted to POS!
-            </h3>
-            {lastScanned?.product && (
-              <div className="gun-product-preview-box">
-                <div style={{ fontSize: '14.5px', fontWeight: 800, color: 'var(--text-main)' }}>
-                  {lastScanned.product.name}
-                </div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '4px 0' }}>
-                  SKU: {lastScanned.product.sku} {lastScanned.product.size && `• Size: ${lastScanned.product.size}`}
-                </div>
-                <div style={{ fontSize: '17px', fontWeight: 800, color: '#10b981', fontFamily: 'var(--font-mono)' }}>
-                  ₹{lastScanned.product.selling_price}
-                </div>
-              </div>
-            )}
-
-            {/* Prominent SCAN NEXT ITEM button */}
-            <button className="gun-scan-next-btn" onClick={handleScanNext}>
-              <Zap size={20} />
-              <span>⚡ SCAN NEXT ITEM</span>
-            </button>
-          </div>
         )}
+
+        <div className="gun-camera-wrapper" style={{ display: cameraError ? 'none' : 'block' }}>
+          {/* Viewfinder stays permanently mounted to avoid re-initialization bugs */}
+          <div id="mobile-scanner-viewfinder" style={{ width: '100%' }}></div>
+          
+          {!lastScanned && !cameraError && (
+            <>
+              <div className="gun-laser-line" />
+              <div className="gun-scanner-guide-text">
+                Point camera at barcode or garment QR tag
+              </div>
+            </>
+          )}
+
+          {/* SCAN RESULT OVERLAY (Appears when item is scanned) */}
+          {lastScanned && (
+            <div className="gun-scanned-overlay-card">
+              <div className="gun-success-icon-wrap">
+                <CheckCircle2 size={32} style={{ color: '#10b981' }} />
+              </div>
+              <h3 style={{ fontSize: '16px', fontWeight: 800, margin: '4px 0 2px' }}>
+                Item Added to POS Bill!
+              </h3>
+              {lastScanned?.product && (
+                <div className="gun-product-preview-box">
+                  <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-main)' }}>
+                    {lastScanned.product.name}
+                  </div>
+                  <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', margin: '3px 0' }}>
+                    SKU: {lastScanned.product.sku} {lastScanned.product.size && `• Size: ${lastScanned.product.size}`}
+                  </div>
+                  <div style={{ fontSize: '16px', fontWeight: 800, color: '#10b981', fontFamily: 'var(--font-mono)' }}>
+                    ₹{lastScanned.product.selling_price}
+                  </div>
+                </div>
+              )}
+
+              {/* Prominent SCAN NEXT ITEM button */}
+              <button className="gun-scan-next-btn" onClick={handleScanNext}>
+                <Zap size={20} />
+                <span>⚡ SCAN NEXT ITEM</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Auto-Continuous Mode Toggle */}

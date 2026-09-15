@@ -52,15 +52,55 @@ export default function ScannerModal({ isOpen, onClose, onScanResult }) {
 
       if (html5QrCodeRef.current) {
         try {
-          await html5QrCodeRef.current.stop();
+          if (html5QrCodeRef.current.isScanning) {
+            await html5QrCodeRef.current.stop();
+          }
         } catch (e) {}
       }
 
       const qrCode = new Html5Qrcode('desktop-camera-reader');
       html5QrCodeRef.current = qrCode;
 
-      let cameraConfig = { facingMode: 'environment' };
+      const qrConfig = {
+        fps: 15,
+        qrbox: { width: 260, height: 160 },
+        aspectRatio: 1.33,
+      };
+
+      const handleScan = (decodedText) => {
+        if (scanCooldownRef.current) return;
+        scanCooldownRef.current = true;
+
+        // Sound Beep
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const osc = ctx.createOscillator();
+          osc.connect(ctx.destination);
+          osc.frequency.setValueAtTime(1100, ctx.currentTime);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.12);
+        } catch (e) {}
+
+        setLastScannedItem({ barcode: decodedText, name: `Barcode: ${decodedText}` });
+        onScanResult(decodedText);
+
+        if (autoContinuous) {
+          setTimeout(() => {
+            setLastScannedItem(null);
+            scanCooldownRef.current = false;
+          }, 1200);
+        }
+      };
+
       try {
+        await qrCode.start(
+          { facingMode: 'environment' },
+          qrConfig,
+          handleScan,
+          () => {}
+        );
+      } catch (firstErr) {
+        console.warn('Desktop facingMode environment failed, checking cameras list...', firstErr);
         const cameras = await Html5Qrcode.getCameras();
         if (cameras && cameras.length > 0) {
           const rearCam = cameras.find(
@@ -69,44 +109,11 @@ export default function ScannerModal({ isOpen, onClose, onScanResult }) {
               c.label.toLowerCase().includes('rear') ||
               c.label.toLowerCase().includes('environment')
           ) || cameras[0];
-          cameraConfig = rearCam.id;
+          await qrCode.start(rearCam.id, qrConfig, handleScan, () => {});
+        } else {
+          throw firstErr;
         }
-      } catch (e) {}
-
-      await qrCode.start(
-        cameraConfig,
-        {
-          fps: 15,
-          qrbox: { width: 260, height: 160 },
-          aspectRatio: 1.33,
-        },
-        (decodedText) => {
-          if (scanCooldownRef.current) return;
-          scanCooldownRef.current = true;
-
-          // Sound Beep
-          try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            osc.connect(ctx.destination);
-            osc.frequency.setValueAtTime(1100, ctx.currentTime);
-            osc.start();
-            osc.stop(ctx.currentTime + 0.12);
-          } catch (e) {}
-
-          setLastScannedItem({ barcode: decodedText, name: `Barcode: ${decodedText}` });
-          onScanResult(decodedText);
-
-          if (!autoContinuous) {
-            stopCamera();
-          } else {
-            setTimeout(() => {
-              scanCooldownRef.current = false;
-            }, 1200);
-          }
-        },
-        () => {}
-      );
+      }
     } catch (err) {
       console.error('Desktop camera error:', err);
       const isHttp = window.location.protocol !== 'https:' && window.location.hostname !== 'localhost';
@@ -122,7 +129,9 @@ export default function ScannerModal({ isOpen, onClose, onScanResult }) {
   const stopCamera = async () => {
     if (html5QrCodeRef.current) {
       try {
-        await html5QrCodeRef.current.stop();
+        if (html5QrCodeRef.current.isScanning) {
+          await html5QrCodeRef.current.stop();
+        }
       } catch (e) {}
     }
     setCameraScanning(false);
@@ -141,7 +150,7 @@ export default function ScannerModal({ isOpen, onClose, onScanResult }) {
 
   const handleScanNext = () => {
     setLastScannedItem(null);
-    startCamera();
+    scanCooldownRef.current = false;
   };
 
   const copyPairLink = () => {
@@ -222,37 +231,57 @@ export default function ScannerModal({ isOpen, onClose, onScanResult }) {
                 </span>
               </div>
 
-              {cameraError ? (
+              {cameraError && (
                 <div style={{ padding: '24px', textAlign: 'center', color: '#ef4444' }}>
                   <p style={{ fontSize: '13px', marginBottom: 12 }}>{cameraError}</p>
                   <button className="btn-primary" onClick={startCamera}>
                     <RefreshCw size={14} /> Retry Camera
                   </button>
                 </div>
-              ) : cameraScanning ? (
-                <div>
-                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '0 0 10px 0', textAlign: 'center' }}>
-                    Point camera at barcode or garment QR label:
-                  </p>
-                  <div id="desktop-camera-reader" style={{ width: '100%', borderRadius: '10px', overflow: 'hidden' }}></div>
-                </div>
-              ) : (
-                /* Scan Success & Scan Next Item */
-                <div style={{ textAlign: 'center', padding: '16px 8px' }}>
-                  <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#ecfdf5', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
-                    <CheckCircle2 size={28} />
-                  </div>
-                  <h4 style={{ fontSize: '16px', fontWeight: 800, margin: '0 0 4px 0' }}>Item Added to POS Bill!</h4>
-                  <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', margin: '0 0 16px 0' }}>
-                    {lastScannedItem?.name}
-                  </p>
-
-                  <button className="btn-primary" onClick={handleScanNext} style={{ width: '100%', padding: '12px', fontSize: '14px', fontWeight: 700 }}>
-                    <Zap size={18} />
-                    <span>⚡ SCAN NEXT ITEM</span>
-                  </button>
-                </div>
               )}
+
+              <div style={{ position: 'relative', display: cameraError ? 'none' : 'block' }}>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '0 0 10px 0', textAlign: 'center' }}>
+                  Point camera at barcode or garment QR label:
+                </p>
+                <div id="desktop-camera-reader" style={{ width: '100%', borderRadius: '10px', overflow: 'hidden' }}></div>
+
+                {/* Scan Success Overlay */}
+                {lastScannedItem && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: '28px 0 0 0',
+                      background: 'rgba(15, 23, 42, 0.92)',
+                      backdropFilter: 'blur(8px)',
+                      borderRadius: '10px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '20px',
+                      textAlign: 'center',
+                      color: '#ffffff',
+                      zIndex: 10,
+                    }}
+                  >
+                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#ecfdf5', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
+                      <CheckCircle2 size={28} />
+                    </div>
+                    <h4 style={{ fontSize: '16px', fontWeight: 800, margin: '0 0 4px 0', color: '#ffffff' }}>
+                      Item Added to POS Bill!
+                    </h4>
+                    <p style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.8)', margin: '0 0 16px 0' }}>
+                      {lastScannedItem?.name}
+                    </p>
+
+                    <button className="btn-primary" onClick={handleScanNext} style={{ width: '100%', maxWidth: '280px', padding: '12px', fontSize: '14px', fontWeight: 700 }}>
+                      <Zap size={18} />
+                      <span>⚡ SCAN NEXT ITEM</span>
+                    </button>
+                  </div>
+                )}
+              </div>
 
               {/* Continuous Scan Checkbox */}
               <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center' }}>
