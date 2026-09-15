@@ -213,4 +213,11 @@ export const settingsApi = {
   },
 };
 
+export const scannerApi = {
+  pushScan: (session_id, barcode) => api.post('/scanner/push', { session_id, barcode }),
+  pollScans: (session_id) => api.get(`/scanner/poll/${session_id}`),
+  syncCart: (payload) => api.post('/scanner/sync-cart', payload),
+  getCartStatus: (session_id) => api.get(`/scanner/cart-status/${session_id}`),
+};
+
 export default api;

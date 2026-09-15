@@ -15,7 +15,8 @@ from app.routers import (
     inventory,
     expenses,
     reports,
-    settings as store_settings
+    settings as store_settings,
+    scanner
 )
 
 @asynccontextmanager
@@ -54,6 +55,7 @@ app.include_router(inventory.router)
 app.include_router(expenses.router)
 app.include_router(reports.router)
 app.include_router(store_settings.router)
+app.include_router(scanner.router)
 
 @app.get("/")
 def root_status():

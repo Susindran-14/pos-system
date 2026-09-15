@@ -23,6 +23,7 @@ import CategoriesBrands from './pages/CategoriesBrands';
 import Users from './pages/Users';
 import AuditLogs from './pages/AuditLogs';
 import Settings from './pages/Settings';
+import MobileScannerGun from './pages/MobileScannerGun';
 
 function MainApp() {
   const [currentView, setView] = useState('pos');
@@ -125,6 +126,20 @@ function MainApp() {
 }
 
 export default function App() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const isScannerMode = urlParams.has('scanner') || urlParams.has('session');
+  const sessionId = urlParams.get('session') || 'MAIN';
+
+  if (isScannerMode) {
+    return (
+      <ThemeProvider>
+        <ToastProvider>
+          <MobileScannerGun sessionId={sessionId} />
+        </ToastProvider>
+      </ThemeProvider>
+    );
+  }
+
   return (
     <ThemeProvider>
       <AuthProvider>
