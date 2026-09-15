@@ -17,6 +17,7 @@ import {
   X,
   Printer,
   Sparkles,
+  Shirt,
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
