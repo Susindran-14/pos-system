@@ -14,5 +14,17 @@ export default defineConfig({
         secure: false,
       }
     }
+  },
+  build: {
+    chunkSizeWarningLimit: 1600,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          scanner: ['html5-qrcode', 'qrcode.react', 'jsbarcode'],
+          icons: ['lucide-react', 'axios'],
+        }
+      }
+    }
   }
 })
