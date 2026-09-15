@@ -211,6 +211,12 @@ export const settingsApi = {
     invalidateCache('/settings');
     return api.put('/settings', data);
   },
+  getDbStatus: () => api.get('/settings/db-status'),
+  syncToNeon: async () => {
+    // Invalidate all cached data upon full DB sync
+    clearCache();
+    return api.post('/settings/sync-to-neon');
+  },
 };
 
 export const scannerApi = {
