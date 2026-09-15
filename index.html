@@ -1,0 +1,1605 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tamil Dress Collection - Textile POS & Retail Management System</title>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+  <!-- Camera Scanner CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body>
+
+  <!-- FULL SCREEN LOGIN SCREEN OVERLAY -->
+  <div id="pos-login-screen" class="login-overlay active">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="login-logo"><i class="fa-solid fa-shirt"></i></div>
+        <h2>TAMIL DRESS COLLECTION</h2>
+        <p>தமிழ் டிரஸ் கலெக்ஷன்</p>
+        <span class="login-branch">Salem Main Branch</span>
+      </div>
+      
+      <div class="login-body">
+        <div style="margin-bottom: 12px; text-align: center;">
+          <label style="font-weight:700; display:block; margin-bottom:6px; font-size:11px; color:var(--text-muted);">ENTER 4-DIGIT SECURITY PASSCODE:</label>
+          <input type="password" id="login-pin-input" class="form-control" style="text-align:center; font-size:22px; letter-spacing:8px; height:44px; font-weight:700; border:1px solid var(--border); border-radius:6px;" placeholder="••••" maxlength="4" inputmode="numeric" oninput="if(this.value.length === 4) setTimeout(submitLoginPin, 150)" onkeydown="if(event.key === 'Enter') submitLoginPin()">
+          
+          <button onclick="submitLoginPin()" class="btn-action-checkout btn-pay" style="width: 100%; height: 44px; font-size: 13px; font-weight: 700; margin-top: 15px; border-radius: 6px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <i class="fa-solid fa-unlock-keyhole"></i> Verify & Unlock Station
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="sidebar-mobile-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15,23,42,0.4); backdrop-filter: blur(2px); z-index: 4999;" onclick="toggleMobileSidebar(false)"></div>
+
+  <!-- LEFT SIDEBAR NAVIGATION (20 Commercial Modules) -->
+  <aside class="app-sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo-icon" id="sidebar-toggle-btn"><i class="fa-solid fa-shirt"></i></div>
+      <div class="sidebar-logo-text">
+        <h2>TAMIL DRESS</h2>
+        <p>தமிழ் டிரஸ் கலெக்ஷன்</p>
+      </div>
+    </div>
+
+    <div class="sidebar-nav-scroll" id="sidebar-nav-links">
+      <!-- Populated dynamically in app.js -->
+    </div>
+
+    <div class="sidebar-footer">
+      <span>Branch: <b>Salem Main</b></span>
+      <span style="color:#10b981;">● Online</span>
+    </div>
+  </aside>
+
+  <!-- MAIN WRAPPER WORKSPACE -->
+  <div class="main-wrapper">
+    
+    <!-- Top Navbar Bar -->
+    <header class="top-navbar">
+      <div class="top-left-group">
+        <button id="sidebar-mobile-toggle" style="display: none; background: none; border: none; font-size: 20px; color: var(--primary); cursor: pointer; margin-right: 12px; align-items: center; justify-content: center; height: 36px; width: 36px;" onclick="toggleMobileSidebar(true)">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="page-title-heading" id="current-view-title">Dashboard Overview</div>
+        <select class="branch-selector">
+          <option value="main">🏪 Salem Main Branch</option>
+          <option value="chennai">🏪 Chennai Branch</option>
+          <option value="coimbatore">🏪 Coimbatore Branch</option>
+        </select>
+      </div>
+
+      <div class="top-right-tools">
+        <div class="quick-stat-chip">
+          <i class="fa-solid fa-indian-rupee-sign" style="color:var(--success);"></i>
+          <span>Today Sales: <strong id="top-today-sales">₹ 0.00</strong></span>
+        </div>
+
+        <button class="theme-toggle" style="background:var(--bg-card); color:var(--primary); border:1px solid var(--primary); font-weight:700;" onclick="console.log('Pair Scanner button clicked!'); openPairScannerModal()">
+          <i class="fa-solid fa-mobile-screen-button"></i> <span>Pair Scanner</span>
+        </button>
+
+        <button class="theme-toggle" onclick="toggleTheme()">
+          <i class="fa-solid fa-moon" id="theme-icon"></i> <span id="theme-text">Dark Mode</span>
+        </button>
+
+        <button class="theme-toggle" style="background:var(--danger-bg); color:var(--danger); border:1px solid var(--danger); font-weight:700;" onclick="lockWorkstation()">
+          <i class="fa-solid fa-lock"></i> <span>Lock Workstation</span>
+        </button>
+
+        <div class="quick-stat-chip" id="top-clock-pill">
+          <i class="fa-regular fa-clock"></i> 08:16 AM
+        </div>
+      </div>
+    </header>
+
+    <!-- Dynamic Module Views Container -->
+    <div class="module-container">
+
+      <!-- ====================================================================
+           MODULE 1: DASHBOARD VIEW
+           ==================================================================== -->
+      <section class="view-panel active" id="view-dashboard">
+        <div class="dashboard-grid">
+          
+          <!-- KPI Cards Row -->
+          <div class="kpi-cards-row">
+            <div class="kpi-card">
+              <div class="kpi-icon-box" style="background:#eef2ff; color:var(--primary);"><i class="fa-solid fa-chart-line"></i></div>
+              <div class="kpi-content">
+                <h4>TODAY'S SALES</h4>
+                <div class="num" id="dash-kpi-sales">₹ 42,850.00</div>
+                <span class="sub"><i class="fa-solid fa-arrow-trend-up"></i> +12% from yesterday</span>
+              </div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-icon-box" style="background:#ecfdf5; color:var(--success);"><i class="fa-solid fa-coins"></i></div>
+              <div class="kpi-content">
+                <h4>TODAY'S PROFIT</h4>
+                <div class="num" id="dash-kpi-profit">₹ 14,200.00</div>
+                <span class="sub"><i class="fa-solid fa-check"></i> Net profit margin 33%</span>
+              </div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-icon-box" style="background:#fef3c7; color:var(--warning);"><i class="fa-solid fa-receipt"></i></div>
+              <div class="kpi-content">
+                <h4>TOTAL INVOICES</h4>
+                <div class="num" id="dash-kpi-bills">18 Bills</div>
+                <span class="sub">Cash: 10 | UPI: 8</span>
+              </div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-icon-box" style="background:#fef2f2; color:var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i></div>
+              <div class="kpi-content">
+                <h4>LOW STOCK ALERTS</h4>
+                <div class="num" id="dash-kpi-stock">3 Dress Items</div>
+                <span class="sub" style="color:var(--danger);">Reorder needed soon</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Split Grid: Recent Sales & Top Selling Apparel -->
+          <div class="dash-split-grid">
+            <div class="card-box">
+              <div class="card-box-header">
+                <h3>Today's Billing Transactions</h3>
+                <button class="btn-qty" style="width:auto; padding:0 8px;" onclick="switchModuleView('pos')">Go to POS Billing</button>
+              </div>
+              <table class="table-custom">
+                <thead>
+                  <tr>
+                    <th>Bill No</th>
+                    <th>Time</th>
+                    <th>Customer</th>
+                    <th>Pay Mode</th>
+                    <th style="text-align:right;">Amount</th>
+                  </tr>
+                </thead>
+                <tbody id="dash-sales-tbody">
+                  <!-- Dynamic rows -->
+                </tbody>
+              </table>
+            </div>
+
+            <div class="card-box">
+              <div class="card-box-header">
+                <h3>Top Selling Dresses</h3>
+              </div>
+              <ul style="list-style:none; display:flex; flex-direction:column; gap:10px;" id="dash-top-products-list">
+                <!-- Top products -->
+              </ul>
+            </div>
+          </div>
+
+          <!-- 7-Day Sales Trend Analysis -->
+          <div class="card-box" style="margin-top: 4px;">
+            <div class="card-box-header">
+              <h3>7-Day Sales Trend Analysis</h3>
+            </div>
+            <div id="dash-sales-trend-chart" style="height: 120px; display: flex; align-items: flex-end; justify-content: space-between; padding-top: 15px; gap: 20px;">
+              <!-- Dynamic bars will render here -->
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           MODULE 2: POS BILLING SCREEN (The Most Important View)
+           ==================================================================== -->
+      <section class="view-panel" id="view-pos">
+        <!-- Mobile Tabs Selector Bar (hidden on desktop) -->
+        <div class="pos-mobile-tabs" id="pos-mobile-tabs-bar">
+          <button class="mobile-tab-btn active" id="tab-btn-catalog" onclick="switchMobilePosTab('catalog')">
+            <i class="fa-solid fa-shirt"></i> <span>Catalog Items</span>
+          </button>
+          <button class="mobile-tab-btn" id="tab-btn-cart" onclick="switchMobilePosTab('cart')">
+            <i class="fa-solid fa-cart-shopping"></i> <span>Cart Invoice</span> <strong id="mobile-cart-badge" style="background:var(--danger); color:#fff; padding:2px 6px; border-radius:10px; font-size:10px; margin-left:4px; display:none;">0</strong>
+          </button>
+        </div>
+
+        <div class="pos-workspace-container show-catalog">
+          
+          <!-- LEFT: Catalog Grid & Search -->
+          <div class="pos-catalog-side">
+            <div class="pos-search-card">
+              <div class="scan-input-box">
+                <i class="fa-solid fa-barcode"></i>
+                <input type="text" id="pos-barcode-input" placeholder="Scan clothing barcode (e.g. 8901001) or search apparel title..." oninput="renderPosCatalog()" onkeydown="handleBarcodeEnter(event)">
+                <button id="pos-mobile-cam-btn" title="Open Mobile Camera Scanner" onclick="toggleDirectCameraScan(true)" style="background:none; border:none; color:var(--primary); font-size:18px; padding:0 8px; cursor:pointer; display:flex; align-items:center;">
+                  <i class="fa-solid fa-camera"></i>
+                </button>
+              </div>
+
+              <!-- Direct Mobile Camera Scanner Container -->
+                          <div id="pos-direct-cam-container" class="scanner-shell" style="display: none; margin-top: 10px; padding: 10px; position: relative; background: linear-gradient(180deg, #0f172a, #111827);">
+                <div class="scanner-window">
+                  <div id="pos-direct-camera-reader" style="width: 100%; height: 100%;"></div>
+                  <div class="scanner-scan-line"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 10px;">
+                  <span class="scanner-status-chip"><i class="fa-solid fa-camera"></i> Live scan</span>
+                  <button class="btn-qty" style="position: static; width: auto; padding: 0 10px; height: 28px; border-radius: 999px; background: rgba(255,255,255,0.08); color:#fff; border:1px solid rgba(255,255,255,0.12);" onclick="toggleDirectCameraScan(false)">Close</button>
+                </div>
+              </div>
+
+              <!-- Category Filter Chips -->
+              <div class="cat-chips-scroll" id="pos-cat-chips">
+                <!-- Generated chips -->
+              </div>
+            </div>
+
+            <div class="pos-cards-scroll">
+              <div class="apparel-grid" id="pos-apparel-grid">
+                <!-- Dynamic dress cards -->
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT: Checkout Cart Panel -->
+          <div class="pos-cart-side">
+            
+            <!-- Customer Lookup Box -->
+            <div class="cust-lookup-box">
+              <div style="font-size:11px; font-weight:700; color:var(--text-muted);">CUSTOMER & INVOICE DETAILS</div>
+              <div class="cust-input-row">
+                <input type="text" id="pos-cust-phone" class="form-control" placeholder="Phone (F1)" value="9876543210" onchange="lookupCustomerInfo()">
+                <input type="text" id="pos-cust-name" class="form-control" placeholder="Customer Name" value="Senthil Kumar">
+              </div>
+            </div>
+
+            <!-- Cart Table -->
+            <div class="cart-table-area">
+              <table class="table-custom">
+                <thead>
+                  <tr>
+                    <th>Apparel Details & Discount</th>
+                    <th style="width:70px; text-align:center;">Qty</th>
+                    <th style="width:80px; text-align:right;">Total</th>
+                    <th style="width:30px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="pos-cart-tbody">
+                  <!-- Dynamic cart rows -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Checkout Summary & Digital LED Box -->
+            <div class="checkout-summary-box">
+              <div class="summary-row">
+                <span>Subtotal:</span>
+                <strong id="pos-subtotal">₹ 0.00</strong>
+              </div>
+              <div class="summary-row">
+                <span>GST Tax (5% / 12%):</span>
+                <strong id="pos-tax">₹ 0.00</strong>
+              </div>
+              <div class="summary-row">
+                <span>Bill Discount:</span>
+                <div style="display:flex; gap:4px; align-items:center;">
+                  <select id="pos-bill-discount-type" class="form-control" style="width:45px; height:24px; padding:0 2px;" onchange="calculatePosTotals()">
+                    <option value="flat">₹</option>
+                    <option value="percent">%</option>
+                  </select>
+                  <input type="number" id="pos-discount-input" class="form-control" style="width:70px; height:24px; text-align:right;" value="0" min="0" oninput="calculatePosTotals()">
+                </div>
+              </div>
+
+              <!-- LED Glowing Display Box -->
+              <div class="led-screen-box">
+                <div style="color:#94a3b8; font-size:10px; font-weight:800;">NET PAYABLE</div>
+                <div class="led-amount" id="pos-led-total">₹ 0.00</div>
+              </div>
+
+              <!-- Main Checkout Action Buttons -->
+              <div class="checkout-btn-group">
+                <button class="btn-action-checkout btn-hold" onclick="toggleDirectCameraScan(true)">
+                  <i class="fa-solid fa-camera"></i> Scan Next Item
+                </button>
+                <button class="btn-action-checkout btn-pay" onclick="openPaymentModal()">
+                  <i class="fa-solid fa-print"></i> Pay & Print
+                </button>
+                <button class="btn-action-checkout btn-wa" onclick="openWhatsAppModal()">
+                  <i class="fa-brands fa-whatsapp"></i> WA
+                </button>
+              </div>
+
+              <div class="quick-action-strip">
+                <button class="mini-action-btn" onclick="toggleDirectCameraScan(true)">
+                  <i class="fa-solid fa-barcode"></i> Scan
+                </button>
+                <button class="mini-action-btn" onclick="holdCurrentBill()">
+                  <i class="fa-solid fa-pause"></i> Hold
+                </button>
+                <button class="mini-action-btn" onclick="clearCurrentBill()">
+                  <i class="fa-solid fa-broom"></i> Clear
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           MODULE 3: PRODUCTS & VARIANTS MATRIX
+           ==================================================================== -->
+      <!-- ====================================================================
+           MODULE 3: PRODUCTS & VARIANTS
+           ==================================================================== -->
+      <section class="view-panel" id="view-products">
+        <!-- Quick Add and Import/Export Row -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:10px; flex-wrap:wrap;">
+          <div style="display:flex; gap:6px;">
+            <button class="btn-qty" style="width:auto; padding:0 12px; background:var(--primary); color:white; border:none; height:32px; font-weight:700;" onclick="switchModuleView('admin-add-product')">
+              <i class="fa-solid fa-plus"></i> Add Product (Variants)
+            </button>
+            <button class="btn-qty" style="width:auto; padding:0 12px; background:var(--success); color:white; border:none; height:32px; font-weight:700;" onclick="openModal('modal-quick-add')">
+              <i class="fa-solid fa-bolt"></i> Quick Add Product
+            </button>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn-qty" style="width:auto; padding:0 12px; height:32px;" onclick="openModal('modal-import-csv')">
+              <i class="fa-solid fa-file-import"></i> Import CSV
+            </button>
+            <button class="btn-qty" style="width:auto; padding:0 12px; height:32px;" onclick="exportProductsToCSV()">
+              <i class="fa-solid fa-file-export"></i> Export CSV
+            </button>
+          </div>
+        </div>
+
+        <div class="card-box" style="margin-bottom: 16px;">
+          <div class="card-box-header">
+            <h3>Apparel Catalog & Product variants</h3>
+          </div>
+          
+          <!-- Filters & Search Bar -->
+          <div style="display:grid; grid-template-columns:2fr 1fr 1fr 1fr 1fr; gap:10px; margin-bottom:14px;">
+            <input type="text" id="admin-prod-search" class="form-control" placeholder="Search by name, SKU, or barcode..." oninput="renderAdminProductsList()">
+            <select id="admin-filter-category" class="form-control" onchange="renderAdminProductsList()">
+              <option value="All">All Categories</option>
+            </select>
+            <select id="admin-filter-brand" class="form-control" onchange="renderAdminProductsList()">
+              <option value="All">All Brands</option>
+            </select>
+            <select id="admin-filter-size" class="form-control" onchange="renderAdminProductsList()">
+              <option value="All">All Sizes</option>
+              <option value="S">S</option>
+              <option value="M">M</option>
+              <option value="L">L</option>
+              <option value="XL">XL</option>
+              <option value="XXL">XXL</option>
+            </select>
+            <select id="admin-filter-status" class="form-control" onchange="renderAdminProductsList()">
+              <option value="All">All Stock Status</option>
+              <option value="InStock">In Stock</option>
+              <option value="LowStock">Low Stock</option>
+              <option value="OutOfStock">Out of Stock</option>
+              <option value="Archived">Archived</option>
+            </select>
+          </div>
+
+          <!-- Bulk Actions Toolbar (Hidden by default, shown when checkboxes selected) -->
+          <div id="admin-bulk-toolbar" style="display:none; background:var(--primary-light); border:1px solid var(--primary); padding:10px; border-radius:8px; margin-bottom:12px; align-items:center; justify-content:space-between;">
+            <div>
+              <strong style="color:var(--primary); font-size:12px;"><i class="fa-solid fa-square-check"></i> <span id="admin-bulk-selected-count">0</span> Variants Selected</strong>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn-qty" style="width:auto; padding:0 8px; height:26px;" onclick="triggerBulkChangeCategory()">Change Category</button>
+              <button class="btn-qty" style="width:auto; padding:0 8px; height:26px;" onclick="triggerBulkChangePrice()">Change Price</button>
+              <button class="btn-qty" style="width:auto; padding:0 8px; height:26px;" onclick="triggerBulkChangeGST()">Change GST</button>
+              <button class="btn-qty" style="width:auto; padding:0 8px; height:26px; background:#fef2f2; color:var(--danger); border-color:var(--danger);" onclick="triggerBulkArchive()">Archive</button>
+              <button class="btn-qty" style="width:auto; padding:0 8px; height:26px; background:#fef2f2; color:var(--danger); border-color:var(--danger);" onclick="triggerBulkDelete()">Delete</button>
+            </div>
+          </div>
+
+          <!-- Pagination details -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:11px; color:var(--text-muted);">
+            <div>
+              Show:
+              <select id="admin-prod-per-page" style="padding:2px; font-size:11px;" onchange="renderAdminProductsList()">
+                <option value="10">10 rows</option>
+                <option value="25" selected>25 rows</option>
+                <option value="50">50 rows</option>
+                <option value="100">100 rows</option>
+              </select>
+            </div>
+            <div id="admin-prod-pagination-info">Showing 0-0 of 0 variants</div>
+          </div>
+
+          <table class="table-custom">
+            <thead>
+              <tr>
+                <th style="width:30px;"><input type="checkbox" id="admin-select-all-products" onchange="toggleAllProductCheckboxes(this)"></th>
+                <th>Apparel Variant Description</th>
+                <th>SKU</th>
+                <th>Barcode</th>
+                <th>Category</th>
+                <th style="text-align:right;">MRP</th>
+                <th style="text-align:right;">Rate</th>
+                <th style="text-align:center;">Stock</th>
+                <th style="text-align:center;">GST</th>
+                <th style="text-align:center;">Status</th>
+                <th style="text-align:center; width:120px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="products-matrix-tbody">
+              <!-- Dynamically populated from JS -->
+            </tbody>
+          </table>
+
+          <!-- Pagination Footer buttons -->
+          <div style="display:flex; justify-content:flex-end; gap:6px; margin-top:12px;" id="admin-prod-pagination-controls">
+            <!-- Dynamic button hooks -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           MODULE 4: INVENTORY & STOCK MANAGEMENT
+           ==================================================================== -->
+      <section class="view-panel" id="view-inventory">
+        <div class="card-box">
+          <div class="card-box-header">
+            <h3>Current Stock Ledger & Stock Adjustment</h3>
+          </div>
+          <table class="table-custom">
+            <thead>
+              <tr>
+                <th>Barcode</th>
+                <th>Item Description</th>
+                <th>Variant</th>
+                <th>Category</th>
+                <th style="text-align:center;">Stock Status</th>
+                <th style="text-align:right;">Valuation</th>
+                <th style="text-align:center;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="inventory-stock-tbody">
+              <!-- Inventory stock -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           MODULE 5: PURCHASES & ORDERS
+           ==================================================================== -->
+      <section class="view-panel" id="view-purchases">
+        <div class="card-box">
+          <div class="card-box-header">
+            <h3>Purchase Entries & Stock Intake Log</h3>
+            <button class="btn-action-checkout btn-pay" style="height:32px; font-size:11px;" onclick="openPurchaseModal()">
+              <i class="fa-solid fa-plus"></i> Record Purchase Entry
+            </button>
+          </div>
+          <p style="color:var(--text-muted); margin-bottom:12px;">Track wholesale clothing purchases from suppliers.</p>
+          <table class="table-custom">
+            <thead>
+              <tr>
+                <th>Purchase ID</th>
+                <th>Date</th>
+                <th>Supplier</th>
+                <th>Items List</th>
+                <th style="text-align:right;">Total Bill</th>
+                <th style="text-align:right;">Paid</th>
+                <th style="text-align:right;">Due</th>
+                <th style="text-align:center;">Status</th>
+              </tr>
+            </thead>
+            <tbody id="purchases-tbody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           MODULE 6: SUPPLIERS
+           ==================================================================== -->
+      <section class="view-panel" id="view-suppliers">
+        <div class="card-box">
+          <div class="card-box-header">
+            <h3>Supplier Directory & Payable Ledger</h3>
+          </div>
+          <table class="table-custom">
+            <thead>
+              <tr>
+                <th>Supplier Name</th>
+                <th>City / Location</th>
+                <th>Contact Phone</th>
+                <th>Total Purchases</th>
+                <th>Outstanding Due</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b>Sri Lakshmi Silks Wholesale</b></td>
+                <td>Kanchipuram</td>
+                <td>+91 98400 12345</td>
+                <td>₹ 4,50,000.00</td>
+                <td style="color:var(--danger); font-weight:700;">₹ 35,000.00</td>
+              </tr>
+              <tr>
+                <td><b>Surat Synthetic Mills Ltd</b></td>
+                <td>Surat, Gujarat</td>
+                <td>+91 98250 99887</td>
+                <td>₹ 2,80,000.00</td>
+                <td>₹ 0.00</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           MODULE 7: CUSTOMERS & DUE LEDGER
+           ==================================================================== -->
+      <section class="view-panel" id="view-customers">
+        <div class="card-box">
+          <div class="card-box-header">
+            <h3>Customer Directory & Loyalty Points</h3>
+          </div>
+          <table class="table-custom">
+            <thead>
+              <tr>
+                <th>Mobile</th>
+                <th>Customer Name</th>
+                <th>City</th>
+                <th>Loyalty Points</th>
+                <th>Credit Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b>9876543210</b></td>
+                <td>Senthil Kumar</td>
+                <td>Salem</td>
+                <td><span style="color:var(--primary); font-weight:700;">350 Pts</span></td>
+                <td>₹ 0.00</td>
+              </tr>
+              <tr>
+                <td><b>9443218765</b></td>
+                <td>Kavitha Murugan</td>
+                <td>Chennai</td>
+                <td><span style="color:var(--primary); font-weight:700;">520 Pts</span></td>
+                <td style="color:var(--danger); font-weight:700;">₹ 1,200.00</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           MODULE 8: EXPENSES TRACKER
+           ==================================================================== -->
+      <section class="view-panel" id="view-expenses">
+        <div class="card-box">
+          <div class="card-box-header">
+            <h3>Daily Store Expenses Log</h3>
+            <button class="btn-action-checkout btn-pay" style="height:32px; font-size:11px;" onclick="openAddExpenseModal()">
+              <i class="fa-solid fa-plus"></i> Record Expense
+            </button>
+          </div>
+          <table class="table-custom">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Payment Mode</th>
+                <th style="text-align:right;">Amount</th>
+              </tr>
+            </thead>
+            <tbody id="expenses-tbody">
+              <tr>
+                <td>23/08/2026</td>
+                <td>Shop Rent</td>
+                <td>Monthly Store Rent Payment</td>
+                <td>Bank Transfer</td>
+                <td style="text-align:right; font-weight:700;">₹ 15,000.00</td>
+              </tr>
+              <tr>
+                <td>23/08/2026</td>
+                <td>Electricity</td>
+                <td>EB Bill Store Lighting & AC</td>
+                <td>UPI GPay</td>
+                <td style="text-align:right; font-weight:700;">₹ 3,450.00</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           MODULE 9: GST & TAX MASTER
+           ==================================================================== -->
+      <section class="view-panel" id="view-gst">
+        <div class="card-box">
+          <div class="card-box-header">
+            <h3>GST & HSN Tax Rates Master</h3>
+          </div>
+          <table class="table-custom">
+            <thead>
+              <tr>
+                <th>HSN Code</th>
+                <th>Apparel Description</th>
+                <th>GST Rate</th>
+                <th>CGST Rate</th>
+                <th>SGST Rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b>5007</b></td>
+                <td>Pure Silk Sarees & Woven Fabrics</td>
+                <td>5.0%</td>
+                <td>2.5%</td>
+                <td>2.5%</td>
+              </tr>
+              <tr>
+                <td><b>6204</b></td>
+                <td>Women's Chudidhars, Salwar & Suits</td>
+                <td>5.0%</td>
+                <td>2.5%</td>
+                <td>2.5%</td>
+              </tr>
+              <tr>
+                <td><b>6205</b></td>
+                <td>Men's Cotton & Linen Shirts</td>
+                <td>5.0%</td>
+                <td>2.5%</td>
+                <td>2.5%</td>
+              </tr>
+              <tr>
+                <td><b>6203</b></td>
+                <td>Men's Denim Jeans & Trousers (MRP > ₹1000)</td>
+                <td>12.0%</td>
+                <td>6.0%</td>
+                <td>6.0%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           MODULE 10: REPORTS & ANALYTICS
+           ==================================================================== -->
+      <section class="view-panel" id="view-reports">
+        <div class="card-box">
+          <div class="card-box-header">
+            <h3>Comprehensive Sales & Tax Reports</h3>
+          </div>
+          <table class="table-custom">
+            <thead>
+              <tr>
+                <th>Invoice No</th>
+                <th>Date & Time</th>
+                <th>Customer</th>
+                <th>Pay Mode</th>
+                <th>GST Tax</th>
+                <th style="text-align:right;">Grand Total</th>
+              </tr>
+            </thead>
+            <tbody id="reports-sales-tbody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           MODULE 11: SETTINGS & STORE PROFILE
+           ==================================================================== -->
+      <section class="view-panel" id="view-settings">
+        <div class="card-box" style="max-width: 650px;">
+          <div class="card-box-header">
+            <h3>Store Profile & Billing Preferences</h3>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <div>
+              <label style="font-weight:700; display:block; margin-bottom:4px;">Store Name (English):</label>
+              <input type="text" id="settings-name" class="form-control" value="TAMIL DRESS COLLECTION">
+            </div>
+            <div>
+              <label style="font-weight:700; display:block; margin-bottom:4px;">Store Name (Tamil):</label>
+              <input type="text" id="settings-name-tamil" class="form-control" value="தமிழ் டிரஸ் கலெக்ஷன்">
+            </div>
+            <div>
+              <label style="font-weight:700; display:block; margin-bottom:4px;">Address Line:</label>
+              <input type="text" id="settings-address" class="form-control" value="142, Main Road, Near Bus Stand, Salem - 636001">
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+              <div>
+                <label style="font-weight:700; display:block; margin-bottom:4px;">GSTIN Registration No:</label>
+                <input type="text" id="settings-gstin" class="form-control" value="33ABCDE1234F1Z5">
+              </div>
+              <div>
+                <label style="font-weight:700; display:block; margin-bottom:4px;">Store Phone Number:</label>
+                <input type="text" id="settings-phone" class="form-control" value="9876543210">
+              </div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+              <div>
+                <label style="font-weight:700; display:block; margin-bottom:4px;">UPI ID for GPay QR:</label>
+                <input type="text" id="settings-upi-id" class="form-control" value="tamildress@upi">
+              </div>
+              <div>
+                <label style="font-weight:700; display:block; margin-bottom:4px;">Tax Calculation Type:</label>
+                <select id="settings-tax-type" class="form-control">
+                  <option value="Local">Local (CGST + SGST)</option>
+                  <option value="Interstate">Interstate (IGST)</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label style="font-weight:700; display:block; margin-bottom:4px;">Thermal Printer Paper Width:</label>
+              <select id="settings-printer-width" class="form-control">
+                <option value="80mm">80mm Thermal Paper (Standard POS)</option>
+                <option value="58mm">58mm Mini Thermal Printer</option>
+                <option value="a4">A4 Full Tax Invoice Page</option>
+              </select>
+            </div>
+            
+            <div style="margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 15px;">
+              <label style="font-weight:700; display:block; margin-bottom:6px;"><i class="fa-solid fa-database"></i> Database Backup & Recovery:</label>
+              <div style="display:flex; gap:8px;">
+                <button class="btn-qty" style="width:auto; padding:0 12px; height:28px;" onclick="backupDatabaseState()"><i class="fa-solid fa-download"></i> Export Backup JSON</button>
+                <button class="btn-qty" style="width:auto; padding:0 12px; height:28px;" onclick="triggerRestoreBackupSelector()"><i class="fa-solid fa-upload"></i> Restore Backup JSON</button>
+              </div>
+            </div>
+
+            <button class="btn-action-checkout btn-pay" style="height:36px; margin-top:15px;" onclick="saveSystemSettings()">
+              Save Settings
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           MODULE 12: ADMIN DASHBOARD
+           ==================================================================== -->
+      <section class="view-panel" id="view-admin-dashboard">
+        <!-- Quick Actions row -->
+        <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:12px; margin-bottom:16px; display:flex; gap:10px; flex-wrap:wrap; box-shadow:var(--shadow-sm);">
+          <strong style="display:flex; align-items:center; font-size:12px; color:var(--text-muted); margin-right:8px;"><i class="fa-solid fa-bolt" style="margin-right:4px;"></i> QUICK ACTIONS:</strong>
+          <button class="btn-qty" style="width:auto; padding:0 12px; background:var(--primary-light); color:var(--primary); height:28px;" onclick="switchModuleView('admin-add-product')"><i class="fa-solid fa-plus"></i> Add Product</button>
+          <button class="btn-qty" style="width:auto; padding:0 12px; background:var(--primary-light); color:var(--primary); height:28px;" onclick="openPurchaseModal()"><i class="fa-solid fa-truck"></i> New Purchase</button>
+          <button class="btn-qty" style="width:auto; padding:0 12px; background:var(--primary-light); color:var(--primary); height:28px;" onclick="openStockAdjustmentModalFromDashboard()"><i class="fa-solid fa-boxes-stacked"></i> Stock Adjust</button>
+          <button class="btn-qty" style="width:auto; padding:0 12px; background:var(--primary-light); color:var(--primary); height:28px;" onclick="openModal('modal-quick-add')"><i class="fa-solid fa-square-plus"></i> Quick Add</button>
+          <button class="btn-qty" style="width:auto; padding:0 12px; background:var(--primary-light); color:var(--primary); height:28px;" onclick="openAddExpenseModal()"><i class="fa-solid fa-wallet"></i> Record Expense</button>
+          <button class="btn-qty" style="width:auto; padding:0 12px; background:var(--primary-light); color:var(--primary); height:28px;" onclick="switchModuleView('reports')"><i class="fa-solid fa-chart-pie"></i> View Reports</button>
+        </div>
+        
+        <div class="dashboard-grid">
+          <div class="kpi-cards-row">
+            <div class="kpi-card">
+              <div class="kpi-icon-box" style="background:#eef2ff; color:var(--primary);"><i class="fa-solid fa-chart-line"></i></div>
+              <div class="kpi-content">
+                <h4>TODAY'S SALES</h4>
+                <div class="num" id="admin-kpi-sales">₹0.00</div>
+                <span class="sub" id="admin-kpi-sales-sub">Completed bills</span>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon-box" style="background:#ecfdf5; color:var(--success);"><i class="fa-solid fa-coins"></i></div>
+              <div class="kpi-content">
+                <h4>GROSS PROFIT</h4>
+                <div class="num" id="admin-kpi-profit">₹0.00</div>
+                <span class="sub" id="admin-kpi-profit-sub">Sales - Cost margin</span>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon-box" style="background:#ecfeff; color:var(--accent);"><i class="fa-solid fa-file-invoice"></i></div>
+              <div class="kpi-content">
+                <h4>TOTAL BILLS</h4>
+                <div class="num" id="admin-kpi-bills">0 Bills</div>
+                <span class="sub" id="admin-kpi-bills-sub">0 Items Sold</span>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon-box" style="background:#fef2f2; color:var(--danger);"><i class="fa-solid fa-boxes-packing"></i></div>
+              <div class="kpi-content">
+                <h4>LOW/OUT STOCK</h4>
+                <div class="num" id="admin-kpi-stock">0 SKUs</div>
+                <span class="sub" style="color:var(--danger);">Needs reorder soon</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Secondary KPI cards for Admin -->
+          <div class="kpi-cards-row" style="margin-top: -8px;">
+            <div class="kpi-card">
+              <div class="kpi-icon-box" style="background:#fefce8; color:var(--warning);"><i class="fa-solid fa-clock-rotate-left"></i></div>
+              <div class="kpi-content">
+                <h4>WEEKLY SALES</h4>
+                <div class="num" id="admin-kpi-weekly">₹0.00</div>
+                <span class="sub" style="color:var(--warning);">Last 7 days total</span>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon-box" style="background:#fef3c7; color:#d97706;"><i class="fa-solid fa-calendar-days"></i></div>
+              <div class="kpi-content">
+                <h4>MONTHLY SALES</h4>
+                <div class="num" id="admin-kpi-monthly">₹0.00</div>
+                <span class="sub" style="color:#d97706;">This calendar month</span>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon-box" style="background:#fff1f2; color:#be123c;"><i class="fa-solid fa-rotate-left"></i></div>
+              <div class="kpi-content">
+                <h4>TODAY RETURNS</h4>
+                <div class="num" id="admin-kpi-returns">₹0.00</div>
+                <span class="sub" style="color:#be123c;">Refunded cash/credit</span>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon-box" style="background:#fef2f2; color:var(--danger);"><i class="fa-solid fa-credit-card"></i></div>
+              <div class="kpi-content">
+                <h4>PENDING CREDIT</h4>
+                <div class="num" id="admin-kpi-credit">₹0.00</div>
+                <span class="sub" style="color:var(--danger);">Customer outstanding due</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="dash-split-grid">
+            <div class="card-box">
+              <div class="card-box-header">
+                <h3>Payment Method Breakdown</h3>
+              </div>
+              <div style="display:flex; justify-content:space-around; align-items:center; height:130px;" id="admin-payment-breakdown">
+                <!-- Dynamically generated visual breakdown -->
+              </div>
+            </div>
+            <div class="card-box">
+              <div class="card-box-header">
+                <h3>Store Expenses (Today)</h3>
+              </div>
+              <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:130px; text-align:center;">
+                <div style="font-size:32px; font-weight:800; color:var(--danger);" id="admin-kpi-expenses">₹0.00</div>
+                <span style="font-size:11px; color:var(--text-muted); margin-top:6px;" id="admin-kpi-expenses-sub">0 recorded expenses</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="dash-split-grid">
+            <div class="card-box">
+              <div class="card-box-header">
+                <h3>Recent Wholesale Purchases</h3>
+              </div>
+              <table class="table-custom">
+                <thead>
+                  <tr>
+                    <th>PO No</th>
+                    <th>Supplier</th>
+                    <th>Items</th>
+                    <th style="text-align:right;">Amount</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-dash-purchases-tbody"></tbody>
+              </table>
+            </div>
+            <div class="card-box">
+              <div class="card-box-header">
+                <h3>Recent Returns</h3>
+              </div>
+              <table class="table-custom">
+                <thead>
+                  <tr>
+                    <th>Return ID</th>
+                    <th>Invoice Ref</th>
+                    <th style="text-align:right;">Refunded</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-dash-returns-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           MODULE 13: ADD/EDIT PRODUCT (MULTI-VARIANT)
+           ==================================================================== -->
+      <section class="view-panel" id="view-admin-add-product">
+        <div class="card-box" style="margin-bottom: 16px;">
+          <div class="card-box-header">
+            <h3 id="add-product-view-title">Add New Apparel Item & Variant Matrices</h3>
+            <button class="btn-qty" style="width:auto; padding:0 12px; height:28px;" onclick="switchModuleView('products')"><i class="fa-solid fa-arrow-left"></i> Back to List</button>
+          </div>
+          
+          <div style="background:var(--bg-card-subtle); padding:12px; border-radius:8px; margin-bottom:14px; border:1px solid var(--border);">
+            <strong>SECTION 1: BASIC INFORMATION</strong>
+            <div style="display:grid; grid-template-columns:2fr 1fr 1fr; gap:12px; margin-top:8px;">
+              <div>
+                <label style="font-weight:700; display:block; margin-bottom:4px;">Product Title Name:</label>
+                <input type="text" id="add-prod-name" class="form-control" placeholder="e.g. Classic Cotton Formal Shirt">
+              </div>
+              <div>
+                <label style="font-weight:700; display:block; margin-bottom:4px;">Category:</label>
+                <select id="add-prod-category" class="form-control">
+                  <!-- Populated via categories setting -->
+                </select>
+              </div>
+              <div>
+                <label style="font-weight:700; display:block; margin-bottom:4px;">Brand name:</label>
+                <input type="text" id="add-prod-brand" class="form-control" placeholder="e.g. Louis Philippe" value="Local Brand">
+              </div>
+            </div>
+          </div>
+
+          <div style="background:var(--bg-card-subtle); padding:12px; border-radius:8px; margin-bottom:16px; border:1px solid var(--border);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <strong>SECTION 2: PRODUCT VARIANTS</strong>
+              <button class="btn-qty" style="width:auto; padding:0 12px; height:26px; background:var(--primary); color:white; border:none;" onclick="addNewVariantRowInput()"><i class="fa-solid fa-plus"></i> Add Variant Row</button>
+            </div>
+
+            <div style="overflow-x:auto;">
+              <table class="table-custom" id="add-prod-variants-table">
+                <thead>
+                  <tr>
+                    <th>SKU</th>
+                    <th>Barcode</th>
+                    <th style="width:80px;">Size</th>
+                    <th style="width:100px;">Color</th>
+                    <th style="width:100px;">Fabric</th>
+                    <th style="width:85px; text-align:right;">Cost (₹)</th>
+                    <th style="width:85px; text-align:right;">MRP (₹)</th>
+                    <th style="width:90px; text-align:right;">Selling (₹)</th>
+                    <th style="width:75px;">GST</th>
+                    <th style="width:75px; text-align:center;">Stock</th>
+                    <th style="width:75px; text-align:center;">Reorder</th>
+                    <th style="width:30px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="add-prod-variants-tbody">
+                  <!-- Variant rows injected dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; gap:8px;">
+            <button class="btn-action-checkout" style="background:var(--border); color:var(--text-main);" onclick="switchModuleView('products')">Cancel</button>
+            <button class="btn-action-checkout btn-pay" id="save-product-action-btn" onclick="saveProductAndVariants()">Save Product & Variants</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           MODULE 14: BARCODE MANAGEMENT
+           ==================================================================== -->
+      <section class="view-panel" id="view-admin-barcodes">
+        <div class="card-box">
+          <div class="card-box-header">
+            <h3>Barcode Tag Manager & Print Sheets</h3>
+            <div style="display:flex; gap:8px;">
+              <button class="btn-action-checkout btn-pay" style="height:32px; font-size:11px;" onclick="printSelectedBarcodes()"><i class="fa-solid fa-print"></i> Print Selected Labels</button>
+              <button class="btn-action-checkout" style="height:32px; font-size:11px; background:var(--bg-card-subtle); color:var(--text-main); border:1px solid var(--border);" onclick="printAllBarcodes()"><i class="fa-solid fa-layer-group"></i> Print All Labels</button>
+            </div>
+          </div>
+          <div style="display:flex; gap:10px; margin-bottom:12px;">
+            <input type="text" id="barcode-mgmt-search" class="form-control" placeholder="Search by name, SKU, or barcode..." oninput="renderBarcodeMgmtList()">
+          </div>
+          <table class="table-custom">
+            <thead>
+              <tr>
+                <th style="width:30px;"><input type="checkbox" id="barcode-mgmt-select-all" onchange="toggleAllBarcodeCheckboxes(this)"></th>
+                <th>Apparel Details</th>
+                <th>Barcode</th>
+                <th>SKU</th>
+                <th>Size/Color</th>
+                <th style="text-align:right;">Price</th>
+                <th style="width:90px; text-align:center;">Label Qty</th>
+                <th style="text-align:center;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="barcode-mgmt-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           MODULE 15: CATEGORIES & BRANDS SETTINGS
+           ==================================================================== -->
+      <section class="view-panel" id="view-admin-categories">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+          <!-- Categories Card -->
+          <div class="card-box">
+            <div class="card-box-header">
+              <h3>Manage Categories</h3>
+              <div style="display:flex; gap:4px;">
+                <input type="text" id="new-cat-name" class="form-control" style="width:130px; height:28px;" placeholder="Category name...">
+                <button class="btn-qty" style="width:auto; padding:0 8px; background:var(--primary); color:white; border:none; height:28px;" onclick="saveNewCategorySetting()">Add</button>
+              </div>
+            </div>
+            <table class="table-custom">
+              <thead>
+                <tr>
+                  <th>Category Name</th>
+                  <th style="text-align:center;">Products Count</th>
+                  <th style="text-align:center;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="categories-mgmt-tbody"></tbody>
+            </table>
+          </div>
+
+          <!-- Brands Card -->
+          <div class="card-box">
+            <div class="card-box-header">
+              <h3>Manage Brands</h3>
+              <div style="display:flex; gap:4px;">
+                <input type="text" id="new-brand-name" class="form-control" style="width:130px; height:28px;" placeholder="Brand name...">
+                <button class="btn-qty" style="width:auto; padding:0 8px; background:var(--primary); color:white; border:none; height:28px;" onclick="saveNewBrandSetting()">Add</button>
+              </div>
+            </div>
+            <table class="table-custom">
+              <thead>
+                <tr>
+                  <th>Brand Name</th>
+                  <th style="text-align:center;">Products Count</th>
+                  <th style="text-align:center;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="brands-mgmt-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           MODULE 16: USERS & SECURITY ROLES
+           ==================================================================== -->
+      <section class="view-panel" id="view-admin-users">
+        <div class="card-box">
+          <div class="card-box-header">
+            <h3>Users, Roles & Security Access Credentials</h3>
+            <button class="btn-qty" style="width:auto; padding:0 12px; height:28px; background:var(--primary); color:white; border:none;" onclick="openAddUserModal()"><i class="fa-solid fa-user-plus"></i> Add New User</button>
+          </div>
+          <p style="color:var(--text-muted); font-size:11px; margin-bottom:12px;">Users require a unique username, role, and a 4-digit passcode PIN. Roles limit access (ADMIN has full control, MANAGER cannot access settings, CASHIER can only access POS billing).</p>
+          <table class="table-custom">
+            <thead>
+              <tr>
+                <th>Display Name</th>
+                <th>Username</th>
+                <th>System Role</th>
+                <th style="text-align:center;">Passcode PIN</th>
+                <th style="text-align:center;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="users-mgmt-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           MODULE 17: ACTIVITY AUDIT LOGS
+           ==================================================================== -->
+      <section class="view-panel" id="view-admin-audit-logs">
+        <div class="card-box">
+          <div class="card-box-header">
+            <h3>System Activity Trail & Audit Logs</h3>
+            <button class="btn-qty" style="width:auto; padding:0 12px; height:28px;" onclick="clearAuditLogs()"><i class="fa-solid fa-trash-can"></i> Clear Logs</button>
+          </div>
+          <div style="display:flex; gap:10px; margin-bottom:12px;">
+            <input type="text" id="audit-log-search" class="form-control" placeholder="Search logs by activity details, user or action..." oninput="renderAuditLogsList()">
+          </div>
+          <table class="table-custom">
+            <thead>
+              <tr>
+                <th style="width:150px;">Timestamp</th>
+                <th style="width:120px;">Operator User</th>
+                <th style="width:150px;">Action Type</th>
+                <th>Operation Details Summary</th>
+              </tr>
+            </thead>
+            <tbody id="audit-logs-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+
+  </div>
+
+  <div class="mobile-bottom-dock" id="mobile-bottom-dock">
+    <button class="dock-btn dock-primary" onclick="toggleDirectCameraScan(true)">
+      <i class="fa-solid fa-camera"></i>
+      <span>Scan</span>
+    </button>
+    <button class="dock-btn dock-secondary" onclick="openPaymentModal()">
+      <i class="fa-solid fa-wallet"></i>
+      <span>Pay</span>
+    </button>
+    <button class="dock-btn dock-success" onclick="openWhatsAppModal()">
+      <i class="fa-brands fa-whatsapp"></i>
+      <span>WA</span>
+    </button>
+  </div>
+
+  <!-- ==========================================================================
+       MODALS & DIALOG POPUPS
+       ========================================================================== -->
+
+  <!-- 1. PAYMENT TENDER MODAL -->
+  <div class="modal-overlay" id="modal-pay">
+    <div class="modal-card">
+      <div class="modal-card-header">
+        <h3><i class="fa-solid fa-cash-register"></i> Complete Payment Settlement</h3>
+        <button class="modal-close-btn" onclick="closeModal('modal-pay')">&times;</button>
+      </div>
+      <div class="modal-card-body">
+        <div style="background:var(--primary-light); border:1px solid var(--border); padding:14px; border-radius:10px; margin-bottom:14px; text-align:center;">
+          <div style="font-size:11px; font-weight:700; color:var(--primary);">TOTAL PAYABLE AMOUNT</div>
+          <div style="font-size:32px; font-weight:800; color:var(--primary);" id="pay-modal-net">₹ 0.00</div>
+        </div>
+
+        <div style="font-weight:700; margin-bottom:8px;">Select Payment Mode:</div>
+        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; margin-bottom:14px;">
+          <button class="btn-action-checkout" style="background:#e0f2fe; color:#0369a1;" onclick="setPaymentMode('Cash')">Cash</button>
+          <button class="btn-action-checkout" style="background:#ecfeff; color:#0e7490;" onclick="setPaymentMode('UPI')">GPay / UPI</button>
+          <button class="btn-action-checkout" style="background:#fef3c7; color:#b45309;" onclick="setPaymentMode('Card')">Card</button>
+          <button class="btn-action-checkout" style="background:#fef2f2; color:#b91c1c;" onclick="setPaymentMode('Credit')">Credit/Due</button>
+        </div>
+
+        <div id="cash-calc-box">
+          <label style="font-weight:700; display:block; margin-bottom:4px;">Cash Received from Customer (₹):</label>
+          <input type="number" id="cash-given-val" class="form-control" style="height:40px; font-size:16px; font-weight:700;" placeholder="Cash given..." oninput="calcChangeReturn()">
+          
+          <div style="margin-top:8px; display:flex; gap:6px; margin-bottom:8px;">
+            <button type="button" class="btn-qty" style="flex:1; height:26px; font-size:11px;" onclick="setQuickCashAmount(500)">₹500</button>
+            <button type="button" class="btn-qty" style="flex:1; height:26px; font-size:11px;" onclick="setQuickCashAmount(1000)">₹1000</button>
+            <button type="button" class="btn-qty" style="flex:1; height:26px; font-size:11px;" onclick="setQuickCashAmount(2000)">₹2000</button>
+            <button type="button" class="btn-qty" style="flex:1; height:26px; font-size:11px;" onclick="setQuickCashAmount(5000)">₹5000</button>
+            <button type="button" class="btn-qty" style="flex:1; height:26px; font-size:11px;" onclick="setQuickCashAmount('Exact')">Exact</button>
+          </div>
+
+          <div style="margin-top:10px; background:var(--warning-bg); border:1px solid var(--warning); padding:10px; border-radius:8px;">
+            <strong>Change to Return: </strong>
+            <span id="cash-return-val" style="font-size:18px; font-weight:800; color:var(--danger);">₹ 0.00</span>
+          </div>
+        </div>
+
+        <div id="upi-qr-box" style="display:none; text-align:center;">
+          <div style="font-size:11px; font-weight:700; color:var(--accent); margin-bottom:4px;">SCAN TO PAY VIA GPAY / PHONEPE</div>
+          <img id="gpay-qr-image" src="" alt="GPay QR Code" style="width:140px; height:140px; border:1px solid var(--border);">
+          <div style="font-size:10px; color:var(--text-muted);">UPI ID: tamildress@upi</div>
+        </div>
+      </div>
+      <div class="modal-card-footer">
+        <button class="btn-action-checkout" style="background:var(--border); color:var(--text-main);" onclick="closeModal('modal-pay')">Cancel</button>
+        <button class="btn-action-checkout btn-pay" onclick="finishSaleAndPrint()">
+          <i class="fa-solid fa-check"></i> CONFIRM & PRINT BILL
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. THERMAL RECEIPT PRINT MODAL -->
+  <div class="modal-overlay" id="modal-receipt">
+    <div class="modal-card" style="max-width:420px;">
+      <div class="modal-card-header">
+        <h3><i class="fa-solid fa-receipt"></i> Printable Tax Invoice</h3>
+        <button class="modal-close-btn" onclick="closeModal('modal-receipt')">&times;</button>
+      </div>
+      <div class="modal-card-body" style="background:#f1f5f9;">
+        <div class="receipt-paper printable-area" id="thermal-receipt-area">
+          <div class="title">TAMIL DRESS COLLECTION</div>
+          <div class="tamil-title">தமிழ் டிரஸ் கலெக்ஷன்</div>
+          <div class="sub">
+            142, Main Road, Bus Stand Near, Salem - 636001<br>
+            GSTIN: 33ABCDE1234F1Z5 | Ph: 9876543210
+          </div>
+          <div class="dash"></div>
+
+          <div style="display:flex; justify-content:space-between;">
+            <span>Bill: <b id="r-bill-id">TDC-1089</b></span>
+            <span id="r-bill-date">23/08/2026</span>
+          </div>
+          <div>Customer: <span id="r-cust">Senthil Kumar</span></div>
+
+          <div class="dash"></div>
+
+          <table>
+            <thead>
+              <tr>
+                <th style="text-align:left;">Apparel</th>
+                <th style="text-align:center;">Qty</th>
+                <th class="num">Rate</th>
+                <th class="num">Total</th>
+              </tr>
+            </thead>
+            <tbody id="r-items-tbody">
+              <!-- Dynamically generated -->
+            </tbody>
+          </table>
+
+          <div class="dash"></div>
+
+          <div style="display:flex; justify-content:space-between;">
+            <span>Subtotal:</span>
+            <span id="r-subtotal">₹ 0.00</span>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span>CGST (2.5%):</span>
+            <span id="r-cgst">₹ 0.00</span>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span>SGST (2.5%):</span>
+            <span id="r-sgst">₹ 0.00</span>
+          </div>
+
+          <div class="dash"></div>
+
+          <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:bold;">
+            <span>NET TOTAL:</span>
+            <span id="r-grand-total">₹ 0.00</span>
+          </div>
+          <div style="text-align:right; font-size:10px;">Pay Mode: <b id="r-pay-mode">CASH</b></div>
+
+          <div class="dash"></div>
+
+          <div style="text-align:center; line-height:1.4;">
+            <i style="font-size:9px;">Exchanged within 7 days with bill.</i><br>
+            <b style="font-size:11px; margin-top:2px; display:block;">மிக்க நன்றி! மீண்டும் வருக!</b>
+            <b>THANK YOU! VISIT AGAIN!</b>
+          </div>
+        </div>
+      </div>
+      <div class="modal-card-footer">
+        <button class="btn-action-checkout" style="background:var(--border); color:var(--text-main);" onclick="closeModal('modal-receipt')">Close</button>
+        <button class="btn-action-checkout btn-pay" onclick="window.print()">
+          <i class="fa-solid fa-print"></i> Print Thermal Bill
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. WHATSAPP INVOICE SIMULATION MODAL -->
+  <div class="modal-overlay" id="modal-whatsapp">
+    <div class="modal-card">
+      <div class="modal-card-header">
+        <h3><i class="fa-brands fa-whatsapp" style="color:#25d366;"></i> Send WhatsApp Invoice</h3>
+        <button class="modal-close-btn" onclick="closeModal('modal-whatsapp')">&times;</button>
+      </div>
+      <div class="modal-card-body">
+        <div style="background:#e8f5e9; border:1px solid #a5d6a7; padding:12px; border-radius:10px; margin-bottom:12px;">
+          <strong>Customer WhatsApp Number:</strong>
+          <input type="text" id="wa-phone-input" class="form-control" style="margin-top:4px;" value="+91 98765 43210">
+        </div>
+        <div style="font-size:11px; font-weight:700; margin-bottom:4px; color:var(--text-muted);">MESSAGE PREVIEW:</div>
+        <textarea id="wa-message-preview" class="form-control" style="height:120px; font-family:monospace; font-size:11px;" readonly>
+🧾 *TAMIL DRESS COLLECTION*
+Dear Senthil Kumar, thank you for shopping with us!
+
+*Invoice:* TDC-1089
+*Total Amount:* ₹ 8,449.00
+*Items Purchased:* 2 pcs (Silk Saree, Chudidhar Set)
+
+Visit Again! 🛍️
+        </textarea>
+      </div>
+      <div class="modal-card-footer">
+        <button class="btn-action-checkout" style="background:var(--border); color:var(--text-main);" onclick="closeModal('modal-whatsapp')">Cancel</button>
+        <button class="btn-action-checkout btn-wa" onclick="sendWhatsAppInvoice()">
+          <i class="fa-solid fa-paper-plane"></i> Send Invoice via WhatsApp
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. ADD NEW APPAREL ITEM MODAL -->
+  <div class="modal-overlay" id="modal-add-product">
+    <div class="modal-card modal-lg">
+      <div class="modal-card-header">
+        <h3><i class="fa-solid fa-plus"></i> Add New Apparel Item & Variant</h3>
+        <button class="modal-close-btn" onclick="closeModal('modal-add-product')">&times;</button>
+      </div>
+      <div class="modal-card-body">
+        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px;">
+          <div>
+            <label style="font-weight:700; display:block; margin-bottom:4px;">Barcode Code:</label>
+            <input type="text" id="new-barcode" class="form-control" placeholder="8901009">
+          </div>
+          <div>
+            <label style="font-weight:700; display:block; margin-bottom:4px;">Apparel Title:</label>
+            <input type="text" id="new-title" class="form-control" placeholder="e.g. Designer Frock">
+          </div>
+          <div>
+            <label style="font-weight:700; display:block; margin-bottom:4px;">Category:</label>
+            <select id="new-category" class="form-control">
+              <option value="Sarees">Sarees</option>
+              <option value="Chudidhar / Salwar">Chudidhar / Salwar</option>
+              <option value="Men's Shirts">Men's Shirts</option>
+              <option value="Jeans & Trousers">Jeans & Trousers</option>
+              <option value="Kidswear">Kidswear</option>
+              <option value="Dhoti Combo">Dhoti Combo</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-weight:700; display:block; margin-bottom:4px;">Size:</label>
+            <select id="new-size" class="form-control">
+              <option value="Free Size">Free Size</option>
+              <option value="S">S</option>
+              <option value="M">M</option>
+              <option value="L">L</option>
+              <option value="XL">XL</option>
+              <option value="XXL">XXL</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-weight:700; display:block; margin-bottom:4px;">Colour:</label>
+            <input type="text" id="new-color" class="form-control" placeholder="e.g. Royal Blue">
+          </div>
+          <div>
+            <label style="font-weight:700; display:block; margin-bottom:4px;">Fabric:</label>
+            <input type="text" id="new-fabric" class="form-control" placeholder="e.g. Pure Silk / Cotton">
+          </div>
+          <div>
+            <label style="font-weight:700; display:block; margin-bottom:4px;">Cost Price (₹):</label>
+            <input type="number" id="new-cost" class="form-control" placeholder="4500">
+          </div>
+          <div>
+            <label style="font-weight:700; display:block; margin-bottom:4px;">Selling Rate (₹):</label>
+            <input type="number" id="new-rate" class="form-control" placeholder="6999">
+          </div>
+          <div>
+            <label style="font-weight:700; display:block; margin-bottom:4px;">MRP (₹):</label>
+            <input type="number" id="new-mrp" class="form-control" placeholder="8500">
+          </div>
+          <div>
+            <label style="font-weight:700; display:block; margin-bottom:4px;">HSN Code:</label>
+            <input type="text" id="new-hsn" class="form-control" value="5007">
+          </div>
+          <div>
+            <label style="font-weight:700; display:block; margin-bottom:4px;">Initial Stock Qty:</label>
+            <input type="number" id="new-stock" class="form-control" value="20">
+          </div>
+        </div>
+      </div>
+      <div class="modal-card-footer">
+        <button class="btn-action-checkout" style="background:var(--border); color:var(--text-main);" onclick="closeModal('modal-add-product')">Cancel</button>
+        <button class="btn-action-checkout btn-pay" onclick="saveNewApparelProduct()">
+          <i class="fa-solid fa-plus"></i> Save to Product Matrix
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       ADMIN & SECURITY MODALS
+       ==================================================================== -->
+
+  <!-- MODAL: PAIR MOBILE SCANNER -->
+  <div class="modal-overlay" id="modal-pair-scanner">
+    <div class="modal-card scanner-shell" style="max-width: 360px; border-radius: 18px; overflow: hidden;">
+      <div class="modal-card-header">
+        <h3><i class="fa-solid fa-mobile-screen-button"></i> Pair Mobile Scanner</h3>
+        <button class="modal-close-btn" onclick="closeModal('modal-pair-scanner')">&times;</button>
+      </div>
+      <div class="modal-card-body" style="text-align: center; padding: 18px; background: linear-gradient(180deg, rgba(15,23,42,0.98), rgba(17,24,39,0.96));">
+        <p style="font-size: 11px; margin-bottom: 12px; color: rgba(226,232,240,0.8); line-height: 1.5;">
+          Scan this QR code using your mobile phone camera to pair it as a real-time remote barcode scanner terminal.
+        </p>
+        <div id="pairing-localhost-warning" style="display:none; text-align:left; font-size:10px; margin-bottom:12px; border:1px solid #fcd34d; background:#fffbeb; color:#92400e; padding:10px; border-radius:8px; line-height:1.4;"></div>
+        <div id="pair-qr-container" style="display: inline-block; padding: 12px; background: #fff; border-radius: 12px; border: 1px solid rgba(79, 70, 229, 0.2); margin-bottom: 15px; box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);"></div>
+        <div id="pair-status-info" class="scanner-status-chip" style="background: rgba(250, 204, 21, 0.12); border-color: rgba(250, 204, 21, 0.4); color: #fef3c7;">
+          <i class="fa-solid fa-spinner fa-spin"></i> Waiting for connection...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FULL SCREEN MOBILE CAMERA SCANNER VIEWPORT -->
+  <div id="mobile-scanner-view" class="mobile-scanner-shell">
+    <div class="mobile-scanner-header">
+      <h2>TAMIL DRESS COLLECTION</h2>
+      <p>Remote Camera Scanner Terminal</p>
+      <div id="mobile-peer-status" class="scanner-status-chip" style="margin-top: 10px; background: rgba(79, 70, 229, 0.12); border-color: rgba(165,180,252,0.6); color: #dfe7ff;">
+        Connecting to PC Workstation...
+      </div>
+    </div>
+
+    <div class="scanner-window scanner-shell" style="max-width: 320px; height: 320px; border-radius: 18px; background: #030712;">
+      <div id="camera-reader" style="width: 100%; height: 100%;"></div>
+      <div class="scanner-scan-line"></div>
+    </div>
+
+    <div style="text-align: center; width: 100%; padding-bottom: 10px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+      <div id="last-scanned-item" class="scanner-result-box" style="margin-bottom: 5px; display: none;">
+        <!-- Filled with scanned item product name -->
+      </div>
+      <button id="paired-scan-next-btn" style="display: none; width: 100%; max-width: 200px; height: 44px; border-radius: 8px; border: none; background: var(--primary); color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);" onclick="resumePairedScanner()">
+        <i class="fa-solid fa-camera"></i> Scan Next Item
+      </button>
+      <button onclick="exitMobileScanner()" class="mobile-scanner-exit" style="width: 100%; max-width: 200px;">
+        <i class="fa-solid fa-power-off"></i> Exit Scanner
+      </button>
+    </div>
+  </div>
+
+  <style>
+    @keyframes laserPulse {
+      0% { top: 15%; }
+      50% { top: 85%; }
+      100% { top: 15%; }
+    }
+  </style>
+
+  <!-- 2. QUICK ADD PRODUCT MODAL -->
+  <div class="modal-overlay" id="modal-quick-add">
+    <div class="modal-card" style="max-width: 350px;">
+      <div class="modal-card-header">
+        <h3><i class="fa-solid fa-bolt"></i> Quick Add Product</h3>
+        <button class="modal-close-btn" onclick="closeModal('modal-quick-add')">&times;</button>
+      </div>
+      <div class="modal-card-body">
+        <div style="margin-bottom:8px;">
+          <label style="font-weight:700; display:block; margin-bottom:2px;">Product Title Name:</label>
+          <input type="text" id="quick-prod-name" class="form-control" placeholder="e.g. Cotton Kurta">
+        </div>
+        <div style="margin-bottom:8px;">
+          <label style="font-weight:700; display:block; margin-bottom:2px;">Category:</label>
+          <select id="quick-prod-category" class="form-control"></select>
+        </div>
+        <div style="margin-bottom:8px;">
+          <label style="font-weight:700; display:block; margin-bottom:2px;">Selling Price (₹):</label>
+          <input type="number" id="quick-prod-price" class="form-control" placeholder="1299">
+        </div>
+        <div style="margin-bottom:8px;">
+          <label style="font-weight:700; display:block; margin-bottom:2px;">Initial Stock Qty:</label>
+          <input type="number" id="quick-prod-stock" class="form-control" value="10">
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-weight:700; display:block; margin-bottom:2px;">Barcode (Leave empty to auto-gen):</label>
+          <input type="text" id="quick-prod-barcode" class="form-control" placeholder="Auto-generated">
+        </div>
+      </div>
+      <div class="modal-card-footer">
+        <button class="btn-action-checkout" style="background:var(--border); color:var(--text-main);" onclick="closeModal('modal-quick-add')">Cancel</button>
+        <button class="btn-action-checkout btn-pay" onclick="saveQuickAddProduct()">Save Product</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. IMPORT CSV MODAL -->
+  <div class="modal-overlay" id="modal-import-csv">
+    <div class="modal-card" style="max-width: 600px;">
+      <div class="modal-card-header">
+        <h3><i class="fa-solid fa-file-csv"></i> Import Products from CSV</h3>
+        <button class="modal-close-btn" onclick="closeModal('modal-import-csv')">&times;</button>
+      </div>
+      <div class="modal-card-body">
+        <p style="font-size:11px; color:var(--text-muted); margin-bottom:10px;">Select a CSV file to upload variants. Columns should include: <code>Product Name, Category, Brand, SKU, Barcode, Size, Color, Cost Price, MRP, Selling Price, GST, Opening Stock, Reorder Level</code></p>
+        <input type="file" id="csv-file-input" class="form-control" accept=".csv" onchange="handleCSVFileSelect(this)">
+        <div id="csv-preview-container" style="margin-top: 14px; display:none;">
+          <h4 id="csv-preview-summary" style="margin-bottom:6px; color:var(--primary);"></h4>
+          <div style="max-height: 200px; overflow-y:auto; border:1px solid var(--border); border-radius:4px; font-size:10px;">
+            <table class="table-custom" style="margin:0;">
+              <thead>
+                <tr id="csv-preview-header"></tr>
+              </thead>
+              <tbody id="csv-preview-tbody"></tbody>
+            </table>
+          </div>
+          <div id="csv-errors-log" style="color:var(--danger); font-size:11px; margin-top:8px; display:none;"></div>
+        </div>
+      </div>
+      <div class="modal-card-footer">
+        <button class="btn-action-checkout" style="background:var(--border); color:var(--text-main);" onclick="closeModal('modal-import-csv')">Cancel</button>
+        <button class="btn-action-checkout btn-pay" id="csv-import-submit-btn" disabled onclick="confirmCSVImportData()">Import Data</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. BULK CATEGORY MODAL -->
+  <div class="modal-overlay" id="modal-bulk-category">
+    <div class="modal-card" style="max-width: 320px;">
+      <div class="modal-card-header">
+        <h3>Change Category for Selected</h3>
+        <button class="modal-close-btn" onclick="closeModal('modal-bulk-category')">&times;</button>
+      </div>
+      <div class="modal-card-body">
+        <label style="font-weight:700; display:block; margin-bottom:4px;">Select New Category:</label>
+        <select id="bulk-new-category" class="form-control"></select>
+      </div>
+      <div class="modal-card-footer">
+        <button class="btn-action-checkout" style="background:var(--border); color:var(--text-main);" onclick="closeModal('modal-bulk-category')">Cancel</button>
+        <button class="btn-action-checkout btn-pay" onclick="applyBulkCategoryChange()">Update</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. BULK PRICE MODAL -->
+  <div class="modal-overlay" id="modal-bulk-price">
+    <div class="modal-card" style="max-width: 320px;">
+      <div class="modal-card-header">
+        <h3>Change Price for Selected</h3>
+        <button class="modal-close-btn" onclick="closeModal('modal-bulk-price')">&times;</button>
+      </div>
+      <div class="modal-card-body">
+        <label style="font-weight:700; display:block; margin-bottom:4px;">Enter New Selling Price (₹):</label>
+        <input type="number" id="bulk-new-price" class="form-control" placeholder="e.g. 1499">
+      </div>
+      <div class="modal-card-footer">
+        <button class="btn-action-checkout" style="background:var(--border); color:var(--text-main);" onclick="closeModal('modal-bulk-price')">Cancel</button>
+        <button class="btn-action-checkout btn-pay" onclick="applyBulkPriceChange()">Update</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. BULK GST MODAL -->
+  <div class="modal-overlay" id="modal-bulk-gst">
+    <div class="modal-card" style="max-width: 320px;">
+      <div class="modal-card-header">
+        <h3>Change GST for Selected</h3>
+        <button class="modal-close-btn" onclick="closeModal('modal-bulk-gst')">&times;</button>
+      </div>
+      <div class="modal-card-body">
+        <label style="font-weight:700; display:block; margin-bottom:4px;">Select GST Rate:</label>
+        <select id="bulk-new-gst" class="form-control">
+          <option value="5">5% GST</option>
+          <option value="12">12% GST</option>
+          <option value="18">18% GST</option>
+          <option value="0">0% Exempt</option>
+        </select>
+      </div>
+      <div class="modal-card-footer">
+        <button class="btn-action-checkout" style="background:var(--border); color:var(--text-main);" onclick="closeModal('modal-bulk-gst')">Cancel</button>
+        <button class="btn-action-checkout btn-pay" onclick="applyBulkGSTChange()">Update</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. ADD USER MODAL -->
+  <div class="modal-overlay" id="modal-add-user">
+    <div class="modal-card" style="max-width: 350px;">
+      <div class="modal-card-header">
+        <h3><i class="fa-solid fa-user-plus"></i> Add New User Profile</h3>
+        <button class="modal-close-btn" onclick="closeModal('modal-add-user')">&times;</button>
+      </div>
+      <div class="modal-card-body">
+        <div style="margin-bottom:8px;">
+          <label style="font-weight:700; display:block; margin-bottom:2px;">Display Name:</label>
+          <input type="text" id="user-display-name" class="form-control" placeholder="e.g. Cashier Priya">
+        </div>
+        <div style="margin-bottom:8px;">
+          <label style="font-weight:700; display:block; margin-bottom:2px;">Username login:</label>
+          <input type="text" id="user-username" class="form-control" placeholder="e.g. priya">
+        </div>
+        <div style="margin-bottom:8px;">
+          <label style="font-weight:700; display:block; margin-bottom:2px;">System Role:</label>
+          <select id="user-role" class="form-control">
+            <option value="CASHIER">CASHIER (POS Only)</option>
+            <option value="MANAGER">MANAGER (Catalog & Inventory)</option>
+            <option value="ADMIN">ADMIN (Full Access)</option>
+          </select>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-weight:700; display:block; margin-bottom:2px;">4-Digit PIN Passcode:</label>
+          <input type="password" id="user-pin" class="form-control" placeholder="e.g. 5555" maxlength="4">
+        </div>
+      </div>
+      <div class="modal-card-footer">
+        <button class="btn-action-checkout" style="background:var(--border); color:var(--text-main);" onclick="closeModal('modal-add-user')">Cancel</button>
+        <button class="btn-action-checkout btn-pay" onclick="saveNewUserProfile()">Save User</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=2.0"></script>
+</body>
+</html>
